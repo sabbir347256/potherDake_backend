@@ -1,0 +1,22 @@
+import { Router } from "express";
+import { userControllers } from "./user.controller";
+import { upload } from "../../config/multer";
+import { Role } from "./user.interface";
+import { checkAuth } from "../middleware/auth.middleware";
+
+const router = Router();
+
+
+router.get("/", userControllers.getAllUsers);
+router.get("/all-agents", checkAuth(Role.ADMIN), userControllers.getAllAgent);
+router.post("/register", upload.single('image'), userControllers.registerUser);
+router.post("/verify-email", userControllers.verifyEmail);
+router.get('/get-profile', checkAuth(Role.ADMIN, Role.USER, Role.AGENT), userControllers.getMyProfile);
+router.patch("/status/:id", checkAuth(Role.ADMIN), userControllers.updateUserStatus);
+router.delete("/:id", checkAuth(Role.USER), userControllers.deleteUser);
+router.put("/update", checkAuth(Role.USER, Role.AGENT, Role.ADMIN), userControllers.updateProfile);
+router.get("/search-profiles", userControllers.searchProfiles);
+router.put("/update-image/:type", checkAuth(Role.USER, Role.AGENT, Role.ADMIN), upload.single("image"), userControllers.updateProfileImage);
+router.put("/update-image/cover", checkAuth(Role.USER), upload.single("image"), (req, res, next) => { req.params.type = "cover"; next(); }, userControllers.updateProfileImage);
+
+export const userRoutes = router;   
