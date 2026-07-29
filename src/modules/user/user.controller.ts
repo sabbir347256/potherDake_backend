@@ -23,20 +23,6 @@ const registerUser = async (req: Request, res: Response, next: NextFunction) => 
         const userData = { ...req.body };
         const file = (req as any).file;
 
-        if (userData?.bonusRefarelID) {
-            const referrer = await User.findOne({ ownRefarelID: userData.bonusRefarelID });
-
-            if (referrer) {
-                if (referrer.role === "AGENT") {
-                    referrer.totalAmount = (referrer.totalAmount || 0) + 70;
-                } else if (referrer.role === "USER") {
-                    referrer.bonusWalletPoints = (referrer.bonusWalletPoints || 0) + 100;
-                }
-
-                await referrer.save();
-            }
-        }
-
         if (userData.auths && typeof userData.auths === "string") {
             try {
                 userData.auths = JSON.parse(userData.auths);
@@ -218,25 +204,8 @@ const verifyEmail = async (req: Request, res: Response, next: NextFunction) => {
             throw new appError(StatusCodes.BAD_REQUEST, "User is already verified!");
         }
 
-        if (user.verificationCode !== code) {
-            throw new appError(StatusCodes.BAD_REQUEST, "Invalid verification code!");
-        }
-
-        if (!user.verificationExpiry || new Date() > user.verificationExpiry) {
-            throw new appError(StatusCodes.BAD_REQUEST, "Verification code has expired!");
-        }
-
-        if (user.bonusRefarelID) {
-            await User.findOneAndUpdate(
-                { ownRefarelID: user.bonusRefarelID },
-                { $inc: { walletPoints: 100 } }
-            );
-        }
-
+      
         user.isVerified = true;
-        user.verificationStage = 'OTP verified';
-        user.verificationCode = undefined as any;
-        user.verificationExpiry = undefined as any;
         await user.save();
 
         return utils.sendResponse(res, {
