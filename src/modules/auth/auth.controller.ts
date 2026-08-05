@@ -20,15 +20,6 @@ const credentialLogin = catchAsync(
           return next(new appError(401, info?.message || "Login failed"));
         }
 
-        // if (user.isApproved === false) {
-        //   return next(
-        //     new appError(
-        //       401,
-        //       "You will be able to log in after the admin approves your account."
-        //     )
-        //   );
-        // }
-
         const userTokens = await createUserToken(user);
         const { password: pass, ...rest } = user.toObject();
 

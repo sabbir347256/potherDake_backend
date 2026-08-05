@@ -36,9 +36,13 @@ export type IUser = {
     profession: string;
     email: string;
     contactNo: string;
+    verificationCode: string;
+    verificationExpiry: string;
     nidNo: string;
     password: string;
     profileImage?: string;
+    nidFront?: string;
+    nidBack?: string;
     isVerified: boolean;
     isDocumentVerification: boolean;
     isDeleted: boolean;

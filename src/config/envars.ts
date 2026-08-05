@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+
 const envVars = {
   PORT: process.env.PORT as string,
   DB_URL: process.env.DB_URL as string,
@@ -13,6 +14,10 @@ const envVars = {
   CLOUD_NAME: process.env.CLOUD_NAME as string,
   CLOUD_API_KEY: process.env.CLOUD_API_KEY as string,
   CLOUD_API_SECRET: process.env.CLOUD_API_SECRET as string,
+  MAIL_PORT: process.env.MAIL_PORT as string,
+  MAIL_HOST: process.env.MAIL_HOST as string,
+  MAIL_USER: process.env.MAIL_USER as string,
+  MAIL_PASS: process.env.MAIL_PASS as string,
 };
 
 export = envVars;

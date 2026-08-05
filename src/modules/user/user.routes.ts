@@ -7,7 +7,9 @@ import { checkAuth } from "../middleware/auth.middleware";
 const router = Router();
 
 
-router.post("/register", upload.single('image'), userControllers.registerUser);
+router.post("/register", userControllers.registerUser);
+
+router.post("/complete-registration", upload.fields([{ name: "nidFront", maxCount: 1 }, { name: "nidBack", maxCount: 1 },]), userControllers.completeRegistration);
 
 
 export const userRoutes = router;   
