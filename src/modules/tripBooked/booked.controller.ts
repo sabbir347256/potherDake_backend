@@ -6,9 +6,6 @@ import { Trip } from "../tripPost/trip.model";
 import { sendResponse } from "../utils/utils";
 
 const createBooking = async (req: Request, res: Response): Promise<void> => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const passengerId = (req as any).user?._id || req.body.passengerId;
     const { tripId, seatsBooked } = req.body;
@@ -16,8 +13,6 @@ const createBooking = async (req: Request, res: Response): Promise<void> => {
     const requestedSeats = Number(seatsBooked);
 
     if (!tripId || !requestedSeats || requestedSeats < 1) {
-      await session.abortTransaction();
-      session.endSession();
       sendResponse(res, {
         statusCode: StatusCodes.BAD_REQUEST,
         success: false,
@@ -27,11 +22,9 @@ const createBooking = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const trip = await Trip.findById(tripId).session(session);
+    const trip = await Trip.findById(tripId);
 
     if (!trip) {
-      await session.abortTransaction();
-      session.endSession();
       sendResponse(res, {
         statusCode: StatusCodes.NOT_FOUND,
         success: false,
@@ -42,8 +35,6 @@ const createBooking = async (req: Request, res: Response): Promise<void> => {
     }
 
     if (trip.status !== "PENDING") {
-      await session.abortTransaction();
-      session.endSession();
       sendResponse(res, {
         statusCode: StatusCodes.BAD_REQUEST,
         success: false,
@@ -54,8 +45,6 @@ const createBooking = async (req: Request, res: Response): Promise<void> => {
     }
 
     if (trip.driverId.toString() === passengerId.toString()) {
-      await session.abortTransaction();
-      session.endSession();
       sendResponse(res, {
         statusCode: StatusCodes.BAD_REQUEST,
         success: false,
@@ -66,8 +55,6 @@ const createBooking = async (req: Request, res: Response): Promise<void> => {
     }
 
     if (trip.availableSeats < requestedSeats) {
-      await session.abortTransaction();
-      session.endSession();
       sendResponse(res, {
         statusCode: StatusCodes.BAD_REQUEST,
         success: false,
@@ -81,26 +68,18 @@ const createBooking = async (req: Request, res: Response): Promise<void> => {
       trip.bookingType === "Instant" ? "CONFIRMED" : "PENDING";
     const totalPrice = trip.pricePerSeat * requestedSeats;
 
-    const booking = await Booking.create(
-      [
-        {
-          tripId,
-          passengerId,
-          seatsBooked: requestedSeats,
-          totalPrice,
-          status: initialStatus,
-        },
-      ],
-      { session },
-    );
+    const booking = await Booking.create({
+      tripId,
+      passengerId,
+      seatsBooked: requestedSeats,
+      totalPrice,
+      status: initialStatus,
+    });
 
     if (initialStatus === "CONFIRMED") {
       trip.availableSeats -= requestedSeats;
-      await trip.save({ session });
+      await trip.save();
     }
-
-    await session.commitTransaction();
-    session.endSession();
 
     sendResponse(res, {
       statusCode: StatusCodes.CREATED,
@@ -109,11 +88,9 @@ const createBooking = async (req: Request, res: Response): Promise<void> => {
         initialStatus === "CONFIRMED"
           ? "Trip booked successfully"
           : "Booking request sent for approval",
-      data: booking[0],
+      data: booking,
     });
   } catch (error: any) {
-    await session.abortTransaction();
-    session.endSession();
     sendResponse(res, {
       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
       success: false,

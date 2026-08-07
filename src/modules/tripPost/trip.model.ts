@@ -73,7 +73,7 @@ const tripSchema = new Schema<ITrip>(
     availableSeats: {
       type: Number,
       required: true,
-      min: 1,
+      min: 0,
       max: 10
     },
     preferences: {
