@@ -8,5 +8,7 @@ const router = Router();
 router.post('/tripBooked',checkAuth(Role.PASSENGER), tripBookedController.createBooking);
 router.patch('/status/:bookingId', tripBookedController.updateBookingStatus);
 router.get('/my-bookings', tripBookedController.getMyBookings);
+router.get("/", tripBookedController.getAllBookings);
+router.get("/:id", tripBookedController.getSingleBooking);
 
 export const tripBookedRoute = router;

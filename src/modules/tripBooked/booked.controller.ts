@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import { Booking } from "./booked.model";
 import { Trip } from "../tripPost/trip.model";
 import { sendResponse } from "../utils/utils";
+import QueryBuilder from "../utils/queryBuilder";
 
 const createBooking = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -249,8 +250,76 @@ const getMyBookings = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+const bookingSearchableFields = ["status"];
+
+const getAllBookings = async (req: Request, res: Response) => {
+  try {
+    const bookingQuery = new QueryBuilder(
+      Booking.find().populate("tripId").populate({
+        path: "passengerId",
+        select: "-password -verificationCode -verificationExpiry",
+      }),
+      req.query,
+    )
+      .search(bookingSearchableFields)
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
+
+    const data = await bookingQuery.modelQuery;
+    const meta = await bookingQuery.countTotal();
+
+    return sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: "Bookings retrieved successfully",
+      meta,
+      data,
+    });
+  } catch (error: any) {
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message || "Failed to fetch bookings",
+    });
+  }
+};
+
+const getSingleBooking = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const result = await Booking.findById(id).populate("tripId").populate({
+      path: "passengerId",
+      select: "-password -verificationCode -verificationExpiry",
+    });
+
+    if (!result) {
+      return sendResponse(res, {
+        statusCode: StatusCodes.NOT_FOUND,
+        success: false,
+        message: "Booking not found",
+        data: null,
+      });
+    }
+
+    return sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: "Booking retrieved successfully",
+      data: result,
+    });
+  } catch (error: any) {
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message || "Failed to fetch booking",
+    });
+  }
+};
+
 export const tripBookedController = {
   createBooking,
   updateBookingStatus,
   getMyBookings,
+  getAllBookings,
+  getSingleBooking,
 };
