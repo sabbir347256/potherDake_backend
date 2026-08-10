@@ -6,10 +6,17 @@ import { checkAuth } from "../middleware/auth.middleware";
 
 const router = Router();
 
-
 router.post("/register", userControllers.registerUser);
 
-router.post("/complete-registration", upload.fields([{ name: "nidFront", maxCount: 1 }, { name: "nidBack", maxCount: 1 },]), userControllers.completeRegistration);
+router.post(
+  "/complete-registration",
+  upload.fields([
+    { name: "nidFront", maxCount: 1 },
+    { name: "nidBack", maxCount: 1 },
+  ]),
+  userControllers.completeRegistration,
+);
+router.get("/passengers", userControllers.getAllPassengers);
+router.get("/drivers", userControllers.getAllDrivers);
 
-
-export const userRoutes = router;   
+export const userRoutes = router;
