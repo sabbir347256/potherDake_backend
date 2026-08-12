@@ -1,82 +1,155 @@
 import { Request, Response } from "express";
 import { Trip } from "./trip.model";
-import { utils } from "../utils/utils";
+import { sendResponse, utils } from "../utils/utils";
 import { StatusCodes } from "http-status-codes";
+import QueryBuilder from "../utils/queryBuilder";
+import { Types } from "mongoose";
 
 const createTrip = async (req: Request, res: Response) => {
-    try {
-        console.log(req.body)
-        console.log(req.user)
-        const driverId = (req as any).user?.userId;
+  try {
+    console.log(req.body);
+    console.log(req.user);
+    const driverId = (req as any).user?.userId;
 
-        const {
-            startingPoint,
-            destination,
-            stopPoints,
-            date,
-            departureTime,
-            estimatedArrivalTime,
-            vehicleType,
-            availableSeats,
-            preferences,
-            pricePerSeat,
-            bookingType,
-            description
-        } = req.body;
+    const {
+      startingPoint,
+      destination,
+      stopPoints,
+      date,
+      departureTime,
+      estimatedArrivalTime,
+      vehicleType,
+      availableSeats,
+      preferences,
+      pricePerSeat,
+      bookingType,
+      description,
+    } = req.body;
 
-        const parsedPrice = Number(pricePerSeat);
-        const platformFee = parsedPrice * 0.1;
-        const earningsPerSeat = parsedPrice - platformFee;
+    const parsedPrice = Number(pricePerSeat);
+    const platformFee = parsedPrice * 0.1;
+    const earningsPerSeat = parsedPrice - platformFee;
 
-        const newTrip = await Trip.create({
-            driverId,
-            startingPoint,
-            destination,
-            stopPoints: Array.isArray(stopPoints) ? stopPoints : stopPoints ? stopPoints.split(',').map((s: string) => s.trim()) : [],
-            date,
-            departureTime,
-            estimatedArrivalTime,
-            vehicleType,
-            availableSeats,
-            preferences,
-            pricePerSeat: parsedPrice,
-            platformFee,
-            earningsPerSeat,
-            bookingType,
-            description
-        });
+    const newTrip = await Trip.create({
+      driverId,
+      startingPoint,
+      destination,
+      stopPoints: Array.isArray(stopPoints)
+        ? stopPoints
+        : stopPoints
+          ? stopPoints.split(",").map((s: string) => s.trim())
+          : [],
+      date,
+      departureTime,
+      estimatedArrivalTime,
+      vehicleType,
+      availableSeats,
+      preferences,
+      pricePerSeat: parsedPrice,
+      platformFee,
+      earningsPerSeat,
+      bookingType,
+      description,
+    });
 
-        return utils.sendResponse(res, {
-            statusCode: StatusCodes.OK,
-            success: true,
-            message: 'Trip posted successfully',
-            data: newTrip
-        })
+    return utils.sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: "Trip posted successfully",
+      data: newTrip,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal Server Error",
+    });
+  }
+};
 
-    } catch (error: any) {
-        return res.status(500).json({
-            success: false,
-            message: error.message || 'Internal Server Error'
-        });
-    }
+const getMyTrips = async (req: Request, res: Response) => {
+  const driverId = (req.user as { userId: Types.ObjectId | string })?.userId;
+
+  const tripQuery = new QueryBuilder(Trip.find({ driverId }), req.query)
+    .search([
+      "startingPoint.addressName",
+      "destination.addressName",
+      "description",
+    ])
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  const data = await tripQuery.modelQuery;
+  const meta = await tripQuery.countTotal();
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: "Driver trips retrieved successfully",
+    meta,
+    data,
+  });
 };
 
 const getTrips = async (req: Request, res: Response): Promise<Response> => {
-    try {
-        const trips = await Trip.find().populate('driverId', 'name email avatar phone');
-        return res.status(200).json({
-            success: true,
-            data: trips
-        });
-    } catch (error: any) {
-        return res.status(500).json({
-            success: false,
-            message: error.message || 'Internal Server Error'
-        });
-    }
+  try {
+    const trips = await Trip.find().populate(
+      "driverId",
+      "name email avatar phone",
+    );
+    return res.status(200).json({
+      success: true,
+      data: trips,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal Server Error",
+    });
+  }
+};
+
+const deleteTrip = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const driverId = (req.user as { userId: Types.ObjectId | string })?.userId;
+
+  if (!driverId) {
+    sendResponse(res, {
+      statusCode: StatusCodes.UNAUTHORIZED,
+      success: false,
+      message: "Unauthorized access",
+      data: null,
+    });
+    return;
+  }
+
+  const trip = await Trip.findOneAndDelete({
+    _id: new Types.ObjectId(id as string),
+    driverId: new Types.ObjectId(driverId as string),
+  });
+
+  if (!trip) {
+    sendResponse(res, {
+      statusCode: StatusCodes.NOT_FOUND,
+      success: false,
+      message: "Trip not found or you are not authorized to delete it",
+      data: null,
+    });
+    return;
+  }
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: "Trip deleted successfully",
+    data: trip,
+  });
 };
 
 export const tripController = {
-    createTrip,
-    getTrips
-}
+  createTrip,
+  getTrips,
+  getMyTrips,
+  deleteTrip,
+};
