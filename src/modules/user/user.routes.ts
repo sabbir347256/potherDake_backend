@@ -16,7 +16,7 @@ router.post(
   ]),
   userControllers.completeRegistration,
 );
-router.get("/passengers", userControllers.getAllPassengers);
-router.get("/drivers", userControllers.getAllDrivers);
+router.get("/passengers", checkAuth(Role?.ADMIN), userControllers.getAllPassengers);
+router.get("/drivers", checkAuth(Role?.ADMIN), userControllers.getAllDrivers);
 
 export const userRoutes = router;

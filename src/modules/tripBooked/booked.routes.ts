@@ -7,8 +7,8 @@ const router = Router();
 
 router.post('/tripBooked',checkAuth(Role.PASSENGER), tripBookedController.createBooking);
 router.patch('/status/:bookingId', tripBookedController.updateBookingStatus);
-router.get('/my-bookings', tripBookedController.getMyBookings);
-router.get("/", tripBookedController.getAllBookings);
-router.get("/:id", tripBookedController.getSingleBooking);
+router.get('/my-bookings',checkAuth(Role.PASSENGER), tripBookedController.getMyBookings);
+router.get("/", checkAuth(Role?.ADMIN, Role?.PASSENGER, Role?.DRIVER), tripBookedController.getAllBookings);
+router.get("/:id", checkAuth(Role?.ADMIN, Role?.PASSENGER, Role?.DRIVER), tripBookedController.getSingleBooking);
 
 export const tripBookedRoute = router;
