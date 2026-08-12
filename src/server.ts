@@ -8,7 +8,7 @@ import { seedSuperAdmin } from "./modules/utils/seedSuperAdmin";
 
 dotenv.config();
 
-const port = envVars.PORT || 5000;
+const port = envVars.PORT || 5001;
 const dbUrl = envVars.DB_URL;
 
 const httpServer = createServer(app);

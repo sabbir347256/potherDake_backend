@@ -18,11 +18,11 @@ passport.use(
           return done(null, false, { message: "User Does not Exist" });
         }
 
-        if (isUserExists.role === "AGENT" || isUserExists.role === "ADMIN") {
-          return done(null, false, {
-            message: "Agents and Admins are not allowed to login here. Please use the valid portal.",
-          });
-        }
+        // if (isUserExists.role === "AGENT" || isUserExists.role === "ADMIN") {
+        //   return done(null, false, {
+        //     message: "Agents and Admins are not allowed to login here. Please use the valid portal.",
+        //   });
+        // }
 
         const isGoogleAuthenticated = isUserExists?.auths?.some(
           (providerobject) => providerobject.provider === "google",
@@ -51,44 +51,44 @@ passport.use(
   ),
 );
 
-passport.use(
-  "agent-local",
-  new localStrategy(
-    {
-      usernameField: "email",
-      passwordField: "password",
-    },
-    async (email, password, done) => {
-      console.log(email)
-      try {
-        const isUserExists = await User.findOne({ email });
+// passport.use(
+//   "agent-local",
+//   new localStrategy(
+//     {
+//       usernameField: "email",
+//       passwordField: "password",
+//     },
+//     async (email, password, done) => {
+//       console.log(email)
+//       try {
+//         const isUserExists = await User.findOne({ email });
 
-        if (!isUserExists) {
-          return done(null, false, { message: "Agent Account Does not Exist" });
-        }
+//         if (!isUserExists) {
+//           return done(null, false, { message: "Agent Account Does not Exist" });
+//         }
 
-        if (isUserExists.role !== "AGENT" && isUserExists.role !== "ADMIN") {
-          return done(null, false, {
-            message: "This portal is only for Agents and Admins.",
-          });
-        }
+//         if (isUserExists.role !== "AGENT" && isUserExists.role !== "ADMIN") {
+//           return done(null, false, {
+//             message: "This portal is only for Agents and Admins.",
+//           });
+//         }
 
-        const isPasswordMatch = await bcryptjs.compare(
-          password,
-          isUserExists?.password as string,
-        );
+//         const isPasswordMatch = await bcryptjs.compare(
+//           password,
+//           isUserExists?.password as string,
+//         );
 
-        if (!isPasswordMatch) {
-          return done(null, false, { message: "Incorrect Password" });
-        }
+//         if (!isPasswordMatch) {
+//           return done(null, false, { message: "Incorrect Password" });
+//         }
 
-        return done(null, isUserExists);
-      } catch (error) {
-        return done(error);
-      }
-    },
-  ),
-);
+//         return done(null, isUserExists);
+//       } catch (error) {
+//         return done(error);
+//       }
+//     },
+//   ),
+// );
 
 passport.serializeUser((user: any, done) => {
   done(null, user._id);
