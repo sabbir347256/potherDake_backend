@@ -147,9 +147,102 @@ const deleteTrip = async (req: Request, res: Response) => {
   });
 };
 
+const findRides = async (req: Request, res: Response) => {
+  try {
+    const { 
+      fromLat, 
+      fromLng, 
+      toLat, 
+      toLng, 
+      maxDistance = 10,
+      minPrice, 
+      maxPrice, 
+      minRating,
+      ...otherQueries 
+    } = req.query;
+
+    let query = Trip.find();
+
+    const EARTH_RADIUS_IN_KM = 6378.1;
+    const maxDistanceInKm = Number(maxDistance);
+
+    if (fromLat && fromLng) {
+      query = query.find({
+        "startingPoint.location": {
+          $geoWithin: {
+            $centerSphere: [
+              [Number(fromLng), Number(fromLat)],
+              maxDistanceInKm / EARTH_RADIUS_IN_KM
+            ]
+          }
+        }
+      });
+    }
+
+    if (toLat && toLng) {
+      query = query.find({
+        "destination.location": {
+          $geoWithin: {
+            $centerSphere: [
+              [Number(toLng), Number(toLat)],
+              maxDistanceInKm / EARTH_RADIUS_IN_KM
+            ]
+          }
+        }
+      });
+    }
+
+    if (minPrice || maxPrice) {
+      const priceFilter: Record<string, number> = {};
+      if (minPrice) priceFilter.$gte = Number(minPrice);
+      if (maxPrice) priceFilter.$lte = Number(maxPrice);
+      query = query.find({ pricePerSeat: priceFilter });
+    }
+
+    if (minRating) {
+      query = query.populate({
+        path: "driverId",
+        match: { rating: { $gte: Number(minRating) } },
+      });
+    } else {
+      query = query.populate("driverId");
+    }
+
+    const tripQuery = new QueryBuilder(query, otherQueries)
+      .search(["startingPoint.addressName", "destination.addressName", "stopPoints", "description"])
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
+
+    const result = await tripQuery.modelQuery;
+    const meta = await tripQuery.countTotal();
+
+    const filteredResult = minRating 
+      ? result.filter((trip: any) => trip.driverId !== null)
+      : result;
+
+    return sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: "Rides retrieved successfully",
+      meta,
+      data: filteredResult,
+    });
+  } catch (error: any) {
+    return sendResponse(res, {
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      success: false,
+      message: error.message || "Failed to retrieve rides",
+      data: null,
+    });
+  }
+};
+
 export const tripController = {
   createTrip,
   getTrips,
   getMyTrips,
   deleteTrip,
+  findRides
 };

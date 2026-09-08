@@ -9,5 +9,6 @@ router.post("/create", checkAuth(Role?.DRIVER), tripController.createTrip);
 router.get("/", checkAuth(Role?.DRIVER, Role?.ADMIN, Role?.PASSENGER), tripController.getTrips);
 router.get("/my-trips", checkAuth(Role?.DRIVER), tripController.getMyTrips);
 router.delete('/:id', checkAuth(Role?.DRIVER), tripController.deleteTrip);
+router.get("/find-rides", checkAuth(Role?.PASSENGER, Role?.ADMIN, Role.DRIVER), tripController.findRides);
 
 export const tripRouter = router;

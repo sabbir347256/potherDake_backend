@@ -11,7 +11,7 @@ router.post("/register", userControllers.registerUser);
 router.post(
   "/complete-registration",
   upload.fields([
-    { name: "nidFront", maxCount: 2 },
+    { name: "nidFront", maxCount: 1 },
     { name: "nidBack", maxCount: 1 },
   ]),
   userControllers.completeRegistration,
