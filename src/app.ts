@@ -18,6 +18,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
+      "http://localhost:8081",
       "https://bibah.app",
       "https://www.bibah.app",
       "https://admin.bibah.app",

@@ -128,6 +128,7 @@ const completeRegistration = async (
 ) => {
   try {
     const { email, otpCode, gender, profession, nidNo } = req.body;
+    console.log(req.body)
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
     if (!email || !otpCode || !gender || !profession || !nidNo) {

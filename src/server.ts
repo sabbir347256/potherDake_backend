@@ -24,24 +24,18 @@ const httpServer = createServer(app);
 
 const startServer = async () => {
   try {
-    await mongoose.connect(dbUrl);
+    await mongoose.connect(dbUrl as string);
     console.log("Database connected successfully");
 
-    httpServer.listen(port, () => {
-      console.log(`Server running on port : ${port}`);
+    await seedSuperAdmin();
+
+    httpServer.listen(Number(port), "0.0.0.0", () => {
+      console.log(`Server running on http://192.168.1.103:${port}`);
     });
   } catch (error) {
-    console.log(error);
+    console.error("Failed to start server:", error);
+    process.exit(1);
   }
 };
 
-
-
-
-(async () => {
-  startServer();
-})();
-
-(async () => {
-  await seedSuperAdmin();
-})();
+startServer();
