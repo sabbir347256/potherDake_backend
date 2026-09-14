@@ -30,7 +30,7 @@ const startServer = async () => {
     await seedSuperAdmin();
 
     httpServer.listen(Number(port), "0.0.0.0", () => {
-      console.log(`Server running on http://192.168.1.103:${port}`);
+      console.log(`Server running on ${port}`);
     });
   } catch (error) {
     console.error("Failed to start server:", error);

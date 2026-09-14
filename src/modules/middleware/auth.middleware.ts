@@ -26,6 +26,7 @@ export const checkAuth =
           envVars.JWT_ACCESS_SECRET,
         ) as JwtPayload;
 
+
         if (!verifyUser) {
           throw new appError(httpStatus.UNAUTHORIZED, "Invalid token!");
         }
