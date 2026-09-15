@@ -161,6 +161,7 @@ const findRides = async (req: Request, res: Response) => {
       ...otherQueries 
     } = req.query;
 
+
     let query = Trip.find();
 
     const EARTH_RADIUS_IN_KM = 6378.1;

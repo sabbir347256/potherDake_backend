@@ -56,11 +56,11 @@ const tripSchema = new Schema<ITrip>(
     stopPoints: [{ type: String }],
     date: {
       type: String,
-      required: true
+      
     },
     departureTime: {
       type: String,
-      required: true
+      
     },
     estimatedArrivalTime: {
       type: String
