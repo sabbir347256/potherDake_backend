@@ -10,5 +10,6 @@ router.get("/", checkAuth(Role?.DRIVER, Role?.ADMIN, Role?.PASSENGER), tripContr
 router.get("/my-trips", checkAuth(Role?.DRIVER), tripController.getMyTrips);
 router.delete('/:id', checkAuth(Role?.DRIVER), tripController.deleteTrip);
 router.get("/find-rides", tripController.findRides);
+router.get("/getDetailsTrip/:id", tripController.getSingleTrip);
 
 export const tripRouter = router;

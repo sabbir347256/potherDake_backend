@@ -269,9 +269,36 @@ const getAllDrivers = async (req: Request, res: Response) => {
   }
 };
 
+
+const getProfile = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.userId ;
+
+    const result = await User.findOne({
+      $or: [{ userID: userId }, { _id: userId }]
+    }).select("-password");
+
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        message: "User profile not found!",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "User profile retrieved successfully",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const userControllers = {
   registerUser,
   completeRegistration,
   getAllPassengers,
   getAllDrivers,
+  getProfile
 };

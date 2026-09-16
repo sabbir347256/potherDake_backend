@@ -240,10 +240,42 @@ const findRides = async (req: Request, res: Response) => {
   }
 };
 
+const getSingleTrip = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const trip = await Trip.findById(id).populate("driverId");
+
+    if (!trip) {
+      return sendResponse(res, {
+        statusCode: StatusCodes.NOT_FOUND,
+        success: false,
+        message: "Trip not found",
+        data: null,
+      });
+    }
+
+    return sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: "Trip details retrieved successfully",
+      data: trip,
+    });
+  } catch (error: any) {
+    return sendResponse(res, {
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      success: false,
+      message: error.message || "Failed to retrieve trip details",
+      data: null,
+    });
+  }
+};
+
 export const tripController = {
   createTrip,
   getTrips,
   getMyTrips,
   deleteTrip,
-  findRides
+  findRides,
+  getSingleTrip
 };

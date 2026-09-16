@@ -18,5 +18,6 @@ router.post(
 );
 router.get("/passengers", checkAuth(Role?.ADMIN), userControllers.getAllPassengers);
 router.get("/drivers", checkAuth(Role?.ADMIN), userControllers.getAllDrivers);
+router.get("/profile", checkAuth(Role.ADMIN, Role.DRIVER, Role.PASSENGER), userControllers.getProfile);
 
 export const userRoutes = router;
