@@ -219,7 +219,7 @@ const updateBookingStatus = async (
 
 const getMyBookings = async (req: Request, res: Response): Promise<void> => {
   try {
-    const passengerId = (req as any).user?._id || req.query.passengerId;
+    const passengerId = (req as any).user?.userId || req.query.userId;
 
     const bookings = await Booking.find({ passengerId })
       .populate({

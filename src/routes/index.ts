@@ -3,6 +3,7 @@ import { userRoutes } from "../modules/user/user.routes";
 import { AuthRouter } from "../modules/auth/auth.routes";
 import { tripRouter } from "../modules/tripPost/trip.routes";
 import { tripBookedRoute } from "../modules/tripBooked/booked.routes";
+import { ChatRoutes } from "../modules/chat/chat.routes";
 
 
 export const router = Router();
@@ -23,6 +24,10 @@ const moduleRoutes = [
   {
     path: "/tripBookedRoute",
     router: tripBookedRoute,
+  },
+  {
+    path: "/chat",
+    router: ChatRoutes,
   },
 
 ];
