@@ -128,7 +128,7 @@ const completeRegistration = async (
 ) => {
   try {
     const { email, otpCode, gender, profession, nidNo } = req.body;
-    console.log(req.body)
+    console.log(req.body);
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
     if (!email || !otpCode || !gender || !profession || !nidNo) {
@@ -186,9 +186,9 @@ const completeRegistration = async (
     user.nidFront = nidFrontPath;
     user.nidBack = nidBackPath;
     user.isVerified = true;
-    user.isDocumentVerification = true;
+    user.isDocumentVerification = false;
     user.isApproved = true;
-    user.isActive = "ACTIVE" as any;
+    user.isActive = "INACTIVE" as any;
     (user as any).verificationCode = null;
     (user as any).verificationExpiry = null;
 
@@ -213,6 +213,39 @@ const getAllPassengers = async (req: Request, res: Response) => {
   try {
     const passengerQuery = new QueryBuilder(
       User.find({ role: Role.PASSENGER, isDeleted: false }),
+      req.query,
+    )
+      .search(userSearchableFields)
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
+
+    const data = await passengerQuery.modelQuery;
+    const meta = await passengerQuery.countTotal();
+
+    return sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: "Passengers retrieved successfully",
+      meta,
+      data,
+    });
+  } catch (error: any) {
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message || "Failed to fetch passengers",
+    });
+  }
+};
+
+const getAllUsers = async (req: Request, res: Response) => {
+  try {
+    const passengerQuery = new QueryBuilder(
+      User.find({
+        isDeleted: false,
+        role: { $in: [Role.PASSENGER, Role.DRIVER] },
+      }),
       req.query,
     )
       .search(userSearchableFields)
@@ -269,13 +302,12 @@ const getAllDrivers = async (req: Request, res: Response) => {
   }
 };
 
-
 const getProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user?.userId ;
+    const userId = req.user?.userId;
 
     const result = await User.findOne({
-      $or: [{ userID: userId }, { _id: userId }]
+      $or: [{ userID: userId }, { _id: userId }],
     }).select("-password");
 
     if (!result) {
@@ -295,10 +327,93 @@ const getProfile = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
+const updateProfileImage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const file = req.file as Express.Multer.File & { path?: string; location?: string; filename?: string };
+
+    if (!file) {
+      throw new appError(StatusCodes.BAD_REQUEST, "Image file is required!");
+    }
+
+    const imagePath = file.path || file.location || file.filename;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { profileImage: imagePath },
+      { new: true, runValidators: true },
+    ).select("-password -verificationCode");
+
+    if (!user) {
+      throw new appError(StatusCodes.NOT_FOUND, "User not found!");
+    }
+
+    return utils.sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: "Profile image updated successfully.",
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const rechargeWallet = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const { amount } = req.body;
+
+    const numAmount = Number(amount);
+
+    if (!amount || isNaN(numAmount) || numAmount <= 0) {
+      throw new appError(
+        StatusCodes.BAD_REQUEST,
+        "Please provide a valid positive amount!",
+      );
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      throw new appError(StatusCodes.NOT_FOUND, "User not found!");
+    }
+
+    const currentBalance = user.mainWalletBalance || 0;
+    user.mainWalletBalance = currentBalance + numAmount;
+
+    await user.save();
+
+    const result = user.toObject();
+    delete (result as any).password;
+    delete (result as any).verificationCode;
+
+    return utils.sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: "Wallet recharged successfully.",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const userControllers = {
   registerUser,
   completeRegistration,
   getAllPassengers,
   getAllDrivers,
-  getProfile
+  getProfile,
+  getAllUsers,
+  updateProfileImage,
+  rechargeWallet,
 };

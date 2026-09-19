@@ -10,7 +10,9 @@ export const createUserToken = async(user : Partial<IUser>) => {
         role: user?.role,
         profileImage : user?.profileImage,
         name : user?.fullName,
-        phone : user?.contactNo
+        phone : user?.contactNo,
+        active: user?.isActive,
+        mainWalletBalance: user?.mainWalletBalance
       };
     
       const accessToken = generateToken(jwtPayload,envVars.JWT_ACCESS_SECRET,String(envVars.JWT_ACCESS_EXPIRES));

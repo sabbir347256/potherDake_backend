@@ -18,6 +18,9 @@ router.post(
 );
 router.get("/passengers", checkAuth(Role?.ADMIN), userControllers.getAllPassengers);
 router.get("/drivers", checkAuth(Role?.ADMIN), userControllers.getAllDrivers);
+router.get("/allusers", checkAuth(Role?.ADMIN), userControllers.getAllUsers);
 router.get("/profile", checkAuth(Role.ADMIN, Role.DRIVER, Role.PASSENGER), userControllers.getProfile);
+router.patch("/update-profile-image",checkAuth(Role.ADMIN, Role.DRIVER, Role.PASSENGER),upload.single("profileImage"),userControllers.updateProfileImage,);
+router.post("/recharge-wallet", checkAuth(Role.ADMIN, Role.DRIVER, Role.PASSENGER), userControllers.rechargeWallet);
 
 export const userRoutes = router;
