@@ -13,6 +13,11 @@ export const BookingSchema: Schema<IBooking> = new Schema(
       ref: 'User',
       required: true
     },
+    driverId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
     seatsBooked: {
       type: Number,
       required: true,

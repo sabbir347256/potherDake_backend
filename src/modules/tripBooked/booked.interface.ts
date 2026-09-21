@@ -5,6 +5,7 @@ export type EBookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED'
 export interface IBooking extends Document {
   tripId: Types.ObjectId;
   passengerId: Types.ObjectId;
+  driverId: Types.ObjectId;
   seatsBooked: number;
   totalPrice: number;
   status: EBookingStatus;
