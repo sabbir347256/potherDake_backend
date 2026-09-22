@@ -12,5 +12,6 @@ router.get('/my-bookings',checkAuth(Role.PASSENGER), tripBookedController.getMyB
 router.get('/driver-bookings', checkAuth(Role.DRIVER), tripBookedController.getDriverBookings);
 router.get("/", checkAuth(Role?.ADMIN, Role?.PASSENGER, Role?.DRIVER), tripBookedController.getAllBookings);
 router.get("/:id", checkAuth(Role?.ADMIN, Role?.PASSENGER, Role?.DRIVER), tripBookedController.getSingleBooking);
+router.get("/dashboard/stats", checkAuth(Role?.ADMIN), tripBookedController.getDashboardStats);
 
 export const tripBookedRoute = router;

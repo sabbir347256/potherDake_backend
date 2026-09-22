@@ -5,11 +5,13 @@ import { Booking } from "./booked.model";
 import { Trip } from "../tripPost/trip.model";
 import { sendResponse } from "../utils/utils";
 import QueryBuilder from "../utils/queryBuilder";
+import { User } from "../user/user.model";
+import { Role } from "../user/user.interface";
 
 const createBooking = async (req: Request, res: Response): Promise<void> => {
   try {
     const passengerId = (req as any).user?._id || req.body.passengerId;
-    const { tripId, seatsBooked,driverId } = req.body;
+    const { tripId, seatsBooked, driverId } = req.body;
 
     const requestedSeats = Number(seatsBooked);
 
@@ -218,61 +220,99 @@ const createBooking = async (req: Request, res: Response): Promise<void> => {
 //   }
 // };
 
-
 const getDriverBookings = async (req: Request, res: Response) => {
   try {
     const driverId = req.user?.userId;
 
     const bookings = await Booking.find({
-      driverId: new Types.ObjectId(driverId)
+      driverId: new Types.ObjectId(driverId),
     })
-      .populate('tripId')
-      .populate('passengerId')
-      .populate('driverId');
+      .populate("tripId")
+      .populate("passengerId")
+      .populate("driverId");
 
     return res.status(200).json({
       success: true,
-      message: 'Driver bookings fetched successfully',
-      data: bookings
+      message: "Driver bookings fetched successfully",
+      data: bookings,
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Failed to fetch driver bookings',
-      error
+      message: "Failed to fetch driver bookings",
+      error,
     });
   }
 };
 
 const updateBookingStatus = async (req: Request, res: Response) => {
   try {
-    const { bookingId} = req.params;
+    const { bookingId } = req.params;
     const { status } = req.body;
 
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    if (status === "CONFIRMED") {
+      const commissionAmount = (booking.totalPrice * 5) / 100;
+
+      const driver = await User.findById(booking.driverId);
+
+      if (!driver) {
+        return res.status(404).json({
+          success: false,
+          message: "Driver not found",
+        });
+      }
+
+      if ((driver.mainWalletBalance || 0) < commissionAmount) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Insufficient balance in your wallet to cover the 5% system commission fee. Please recharge your account to confirm this booking.",
+        });
+      }
+
+      const admin = await User.findOne({ role: Role.ADMIN });
+
+      if (!admin) {
+        return res.status(404).json({
+          success: false,
+          message: "Admin account not found",
+        });
+      }
+
+      await User.findByIdAndUpdate(driver._id, {
+        $inc: { mainWalletBalance: -commissionAmount },
+      });
+
+      await User.findByIdAndUpdate(admin._id, {
+        $inc: { mainWalletBalance: commissionAmount },
+      });
+    }
 
     const updatedBooking = await Booking.findByIdAndUpdate(
       bookingId,
       { status },
-      { new: true }
+      { new: true },
     );
-
-    if (!updatedBooking) {
-      return res.status(404).json({
-        success: false,
-        message: 'Booking not found'
-      });
-    }
 
     return res.status(200).json({
       success: true,
-      message: 'Booking status updated successfully',
-      data: updatedBooking
+      message: "Booking status updated successfully",
+      data: updatedBooking,
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Failed to update booking status',
-      error
+      message: "Failed to update booking status",
+      error,
     });
   }
 };
@@ -376,6 +416,35 @@ const getSingleBooking = async (req: Request, res: Response) => {
   }
 };
 
+const getDashboardStats = async (req: Request, res: Response) => {
+  try {
+    const totalDrivers = await User.countDocuments({ role: Role.DRIVER });
+    const totalPassengers = await User.countDocuments({ role: Role.PASSENGER });
+    const confirmedBookings = await Booking.countDocuments({ status: 'CONFIRMED' });
+    const totalTrips = await Trip.countDocuments();
+
+    const adminUser = await User.findOne({ role: Role.ADMIN });
+    const adminWalletBalance = adminUser?.mainWalletBalance || 0;
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        totalDrivers,
+        totalPassengers,
+        confirmedBookings,
+        totalTrips,
+        adminWalletBalance
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch dashboard statistics',
+      error
+    });
+  }
+};
+
 export const tripBookedController = {
   createBooking,
   updateBookingStatus,
@@ -383,5 +452,6 @@ export const tripBookedController = {
   getAllBookings,
   getSingleBooking,
   getDriverBookings,
-  // updateBookingStatusNew
+  // updateBookingStatusNew,
+  getDashboardStats
 };
