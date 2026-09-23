@@ -7,6 +7,7 @@ import { sendResponse } from "../utils/utils";
 import QueryBuilder from "../utils/queryBuilder";
 import { User } from "../user/user.model";
 import { Role } from "../user/user.interface";
+import { Commission } from "../commission/commision.model";
 
 const createBooking = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -295,12 +296,18 @@ const updateBookingStatus = async (req: Request, res: Response) => {
       await User.findByIdAndUpdate(admin._id, {
         $inc: { mainWalletBalance: commissionAmount },
       });
+
+      await Commission.create({
+        bookingId: booking._id,
+        driverId: driver._id,
+        amount: commissionAmount,
+      });
     }
 
     const updatedBooking = await Booking.findByIdAndUpdate(
       bookingId,
       { status },
-      { new: true },
+      { new: true }
     );
 
     return res.status(200).json({
@@ -445,6 +452,52 @@ const getDashboardStats = async (req: Request, res: Response) => {
   }
 };
 
+const getAllCommissions = async (req: Request, res: Response) => {
+  
+  try {
+    const result = await Commission.find({ isDeleted: false })
+      .populate("driverId", "fullName email contactNo role")
+      .populate("bookingId")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      message: "Commissions retrieved successfully",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Error in getAllCommissions:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve transactions",
+      error,
+    });
+  }
+};
+ const deleteCommission = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const result = await Commission.findByIdAndUpdate(
+      id,
+      { isDeleted: true },
+      { new: true }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Transaction deleted successfully",
+      data: result,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete transaction",
+      error,
+    });
+  }
+};
+
 export const tripBookedController = {
   createBooking,
   updateBookingStatus,
@@ -453,5 +506,7 @@ export const tripBookedController = {
   getSingleBooking,
   getDriverBookings,
   // updateBookingStatusNew,
-  getDashboardStats
+  getDashboardStats,
+  getAllCommissions,
+  deleteCommission
 };

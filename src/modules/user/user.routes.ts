@@ -22,5 +22,7 @@ router.get("/allusers", checkAuth(Role?.ADMIN), userControllers.getAllUsers);
 router.get("/profile", checkAuth(Role.ADMIN, Role.DRIVER, Role.PASSENGER), userControllers.getProfile);
 router.patch("/update-profile-image",checkAuth(Role.ADMIN, Role.DRIVER, Role.PASSENGER),upload.single("profileImage"),userControllers.updateProfileImage,);
 router.post("/recharge-wallet", checkAuth(Role.ADMIN, Role.DRIVER, Role.PASSENGER), userControllers.rechargeWallet);
+router.patch("/status/:userId", checkAuth(Role.ADMIN), userControllers.updateUserStatus);
+router.delete("/:userId", checkAuth(Role.ADMIN), userControllers.deleteUser);
 
 export const userRoutes = router;

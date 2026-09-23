@@ -407,6 +407,69 @@ const rechargeWallet = async (
   }
 };
 
+const updateUserStatus = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { status } = req.body;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { isActive: status },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "User status updated successfully",
+      data: updatedUser,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update user status",
+      error,
+    });
+  }
+};
+
+const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    const deletedUser = await User.findByIdAndUpdate(
+      userId,
+      { isDeleted: true },
+      { new: true }
+    );
+
+    if (!deletedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+      data: deletedUser,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete user",
+      error,
+    });
+  }
+};
+
 export const userControllers = {
   registerUser,
   completeRegistration,
@@ -416,4 +479,6 @@ export const userControllers = {
   getAllUsers,
   updateProfileImage,
   rechargeWallet,
+  updateUserStatus,
+  deleteUser,
 };

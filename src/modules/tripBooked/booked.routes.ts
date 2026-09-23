@@ -10,8 +10,11 @@ router.post('/tripBooked',checkAuth(Role.PASSENGER), tripBookedController.create
 router.patch('/status/:bookingId', checkAuth(Role.DRIVER, Role.ADMIN), tripBookedController.updateBookingStatus);
 router.get('/my-bookings',checkAuth(Role.PASSENGER), tripBookedController.getMyBookings);
 router.get('/driver-bookings', checkAuth(Role.DRIVER), tripBookedController.getDriverBookings);
+router.get("/commissions",checkAuth(Role?.ADMIN), tripBookedController.getAllCommissions);
+router.delete("/commissions/:id", checkAuth(Role?.ADMIN), tripBookedController.deleteCommission);
 router.get("/", checkAuth(Role?.ADMIN, Role?.PASSENGER, Role?.DRIVER), tripBookedController.getAllBookings);
 router.get("/:id", checkAuth(Role?.ADMIN, Role?.PASSENGER, Role?.DRIVER), tripBookedController.getSingleBooking);
 router.get("/dashboard/stats", checkAuth(Role?.ADMIN), tripBookedController.getDashboardStats);
+
 
 export const tripBookedRoute = router;
