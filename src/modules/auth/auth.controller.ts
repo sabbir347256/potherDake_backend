@@ -16,9 +16,13 @@ const credentialLogin = catchAsync(
           return next(new appError(401, err));
         }
 
-        // if(user && user.isActive === "INACTIVE") {
-        //   return next(new appError(401, "Your account is inactive. Please Wait 1 hour."));
-        // }
+        if(user && user.isActive === "INACTIVE") {
+          return next(new appError(401, "Your account is inactive. Please Wait 1 hour."));
+        }
+
+        if(user && user.isActive === "BLOCKED") {
+          return next(new appError(401, "Your account is blocked. Please contact admin."));
+        }
 
         if (!user) {
           return next(new appError(401, info?.message || "Login failed"));
