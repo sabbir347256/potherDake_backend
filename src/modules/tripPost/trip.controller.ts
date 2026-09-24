@@ -246,11 +246,12 @@ const findRides = async (req: Request, res: Response) => {
       }
     }
 
-    if (date) {
-      queryConditions.date = String(date);
+    // Date search handle - Case insensitive regex or exact match
+    if (date && date !== "undefined" && date !== "") {
+      queryConditions.date = { $regex: String(date), $options: "i" };
     }
 
-    if (vehicleType) {
+    if (vehicleType && vehicleType !== "undefined" && vehicleType !== "") {
       queryConditions.vehicleType = String(vehicleType);
     }
 
@@ -271,9 +272,19 @@ const findRides = async (req: Request, res: Response) => {
       query = query.populate("driverId");
     }
 
+    // Clean up queries so QueryBuilder doesn't duplicate condition checks
     const cleanOtherQueries = { ...otherQueries };
     delete cleanOtherQueries.fromAddress;
     delete cleanOtherQueries.toAddress;
+    delete cleanOtherQueries.fromLat;
+    delete cleanOtherQueries.fromLng;
+    delete cleanOtherQueries.toLat;
+    delete cleanOtherQueries.toLng;
+    delete cleanOtherQueries.date;
+    delete cleanOtherQueries.vehicleType;
+    delete cleanOtherQueries.minPrice;
+    delete cleanOtherQueries.maxPrice;
+    delete cleanOtherQueries.minRating;
 
     const tripQuery = new QueryBuilder(query, cleanOtherQueries)
       .search([
