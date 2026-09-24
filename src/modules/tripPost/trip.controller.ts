@@ -4,6 +4,7 @@ import { sendResponse, utils } from "../utils/utils";
 import { StatusCodes } from "http-status-codes";
 import QueryBuilder from "../utils/queryBuilder";
 import { Types } from "mongoose";
+import { Booking } from "../tripBooked/booked.model";
 
 const createTrip = async (req: Request, res: Response) => {
   try {
@@ -149,20 +150,29 @@ const deleteTrip = async (req: Request, res: Response) => {
 
 const findRides = async (req: Request, res: Response) => {
   try {
-    const { 
-      fromLat, 
-      fromLng, 
-      toLat, 
-      toLng, 
-      maxDistance = 10,
-      minPrice, 
-      maxPrice, 
+    const {
+      fromLat,
+      fromLng,
+      toLat,
+      toLng,
+      maxDistance = 100,
+      minPrice,
+      maxPrice,
       minRating,
-      ...otherQueries 
+      date,
+      vehicleType,
+      ...otherQueries
     } = req.query;
 
+    const confirmedBookings = await Booking.find({ status: "CONFIRMED" }).select(
+      "tripId",
+    );
+    const confirmedTripIds = confirmedBookings.map((booking) => booking.tripId);
 
-    let query = Trip.find();
+    let query = Trip.find({
+      _id: { $nin: confirmedTripIds },
+      availableSeats: { $gt: 0 },
+    });
 
     const EARTH_RADIUS_IN_KM = 6378.1;
     const maxDistanceInKm = Number(maxDistance);
@@ -173,10 +183,10 @@ const findRides = async (req: Request, res: Response) => {
           $geoWithin: {
             $centerSphere: [
               [Number(fromLng), Number(fromLat)],
-              maxDistanceInKm / EARTH_RADIUS_IN_KM
-            ]
-          }
-        }
+              maxDistanceInKm / EARTH_RADIUS_IN_KM,
+            ],
+          },
+        },
       });
     }
 
@@ -186,11 +196,19 @@ const findRides = async (req: Request, res: Response) => {
           $geoWithin: {
             $centerSphere: [
               [Number(toLng), Number(toLat)],
-              maxDistanceInKm / EARTH_RADIUS_IN_KM
-            ]
-          }
-        }
+              maxDistanceInKm / EARTH_RADIUS_IN_KM,
+            ],
+          },
+        },
       });
+    }
+
+    if (date) {
+      query = query.find({ date: String(date) });
+    }
+
+    if (vehicleType) {
+      query = query.find({ vehicleType: String(vehicleType) });
     }
 
     if (minPrice || maxPrice) {
@@ -210,7 +228,12 @@ const findRides = async (req: Request, res: Response) => {
     }
 
     const tripQuery = new QueryBuilder(query, otherQueries)
-      .search(["startingPoint.addressName", "destination.addressName", "stopPoints", "description"])
+      .search([
+        "startingPoint.addressName",
+        "destination.addressName",
+        "stopPoints",
+        "description",
+      ])
       .filter()
       .sort()
       .paginate()
@@ -219,11 +242,11 @@ const findRides = async (req: Request, res: Response) => {
     const result = await tripQuery.modelQuery;
     const meta = await tripQuery.countTotal();
 
-    const filteredResult = minRating 
+    const filteredResult = minRating
       ? result.filter((trip: any) => trip.driverId !== null)
       : result;
 
-    return sendResponse(res, {
+    return res.status(StatusCodes.OK).json({
       statusCode: StatusCodes.OK,
       success: true,
       message: "Rides retrieved successfully",
@@ -231,7 +254,7 @@ const findRides = async (req: Request, res: Response) => {
       data: filteredResult,
     });
   } catch (error: any) {
-    return sendResponse(res, {
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
       success: false,
       message: error.message || "Failed to retrieve rides",
@@ -277,5 +300,5 @@ export const tripController = {
   getMyTrips,
   deleteTrip,
   findRides,
-  getSingleTrip
+  getSingleTrip,
 };
