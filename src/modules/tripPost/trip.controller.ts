@@ -149,13 +149,16 @@ const deleteTrip = async (req: Request, res: Response) => {
 };
 
 const findRides = async (req: Request, res: Response) => {
+  console.log("Incoming Query Parameters:", req.query);
   try {
     const {
       fromLat,
       fromLng,
       toLat,
       toLng,
-      maxDistance = 100,
+      fromAddress,
+      toAddress,
+      maxDistance = 150,
       minPrice,
       maxPrice,
       minRating,
@@ -164,59 +167,100 @@ const findRides = async (req: Request, res: Response) => {
       ...otherQueries
     } = req.query;
 
-    const confirmedBookings = await Booking.find({ status: "CONFIRMED" }).select(
-      "tripId",
-    );
+    const confirmedBookings = await Booking.find({ status: "CONFIRMED" }).select("tripId");
     const confirmedTripIds = confirmedBookings.map((booking) => booking.tripId);
 
-    let query = Trip.find({
+    const queryConditions: any = {
       _id: { $nin: confirmedTripIds },
       availableSeats: { $gt: 0 },
-    });
+    };
 
     const EARTH_RADIUS_IN_KM = 6378.1;
     const maxDistanceInKm = Number(maxDistance);
 
-    if (fromLat && fromLng) {
-      query = query.find({
-        "startingPoint.location": {
-          $geoWithin: {
-            $centerSphere: [
-              [Number(fromLng), Number(fromLat)],
-              maxDistanceInKm / EARTH_RADIUS_IN_KM,
-            ],
+    if ((fromLat && fromLng) || fromAddress) {
+      const fromOrConditions: any[] = [];
+
+      if (fromLat && fromLng) {
+        fromOrConditions.push({
+          "startingPoint.location": {
+            $geoWithin: {
+              $centerSphere: [
+                [Number(fromLng), Number(fromLat)],
+                maxDistanceInKm / EARTH_RADIUS_IN_KM,
+              ],
+            },
           },
-        },
-      });
+        });
+      }
+
+      if (fromAddress) {
+        fromOrConditions.push({
+          "startingPoint.addressName": {
+            $regex: String(fromAddress),
+            $options: "i",
+          },
+        });
+      }
+
+      if (fromOrConditions.length > 0) {
+        queryConditions.$or = fromOrConditions;
+      }
     }
 
-    if (toLat && toLng) {
-      query = query.find({
-        "destination.location": {
-          $geoWithin: {
-            $centerSphere: [
-              [Number(toLng), Number(toLat)],
-              maxDistanceInKm / EARTH_RADIUS_IN_KM,
-            ],
+    if ((toLat && toLng) || toAddress) {
+      const toOrConditions: any[] = [];
+
+      if (toLat && toLng) {
+        toOrConditions.push({
+          "destination.location": {
+            $geoWithin: {
+              $centerSphere: [
+                [Number(toLng), Number(toLat)],
+                maxDistanceInKm / EARTH_RADIUS_IN_KM,
+              ],
+            },
           },
-        },
-      });
+        });
+      }
+
+      if (toAddress) {
+        toOrConditions.push({
+          "destination.addressName": {
+            $regex: String(toAddress),
+            $options: "i",
+          },
+        });
+      }
+
+      if (toOrConditions.length > 0) {
+        if (queryConditions.$or) {
+          queryConditions.$and = [
+            { $or: queryConditions.$or },
+            { $or: toOrConditions },
+          ];
+          delete queryConditions.$or;
+        } else {
+          queryConditions.$or = toOrConditions;
+        }
+      }
     }
 
     if (date) {
-      query = query.find({ date: String(date) });
+      queryConditions.date = String(date);
     }
 
     if (vehicleType) {
-      query = query.find({ vehicleType: String(vehicleType) });
+      queryConditions.vehicleType = String(vehicleType);
     }
 
     if (minPrice || maxPrice) {
-      const priceFilter: Record<string, number> = {};
-      if (minPrice) priceFilter.$gte = Number(minPrice);
-      if (maxPrice) priceFilter.$lte = Number(maxPrice);
-      query = query.find({ pricePerSeat: priceFilter });
+      queryConditions.pricePerSeat = {};
+      if (minPrice) queryConditions.pricePerSeat.$gte = Number(minPrice);
+      if (maxPrice) queryConditions.pricePerSeat.$lte = Number(maxPrice);
     }
+
+    let query = Trip.find(queryConditions);
 
     if (minRating) {
       query = query.populate({
@@ -227,7 +271,11 @@ const findRides = async (req: Request, res: Response) => {
       query = query.populate("driverId");
     }
 
-    const tripQuery = new QueryBuilder(query, otherQueries)
+    const cleanOtherQueries = { ...otherQueries };
+    delete cleanOtherQueries.fromAddress;
+    delete cleanOtherQueries.toAddress;
+
+    const tripQuery = new QueryBuilder(query, cleanOtherQueries)
       .search([
         "startingPoint.addressName",
         "destination.addressName",
@@ -254,6 +302,7 @@ const findRides = async (req: Request, res: Response) => {
       data: filteredResult,
     });
   } catch (error: any) {
+    console.error("findRides Error:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
       success: false,
@@ -262,6 +311,7 @@ const findRides = async (req: Request, res: Response) => {
     });
   }
 };
+
 
 const getSingleTrip = async (req: Request, res: Response) => {
   try {
